@@ -1,0 +1,44 @@
+name: Publish 🚀
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+
+env:
+  VERSION: 1.0.0
+  PUBLISH_LOCATION: "C:\Users\Administrator\Desktop\PUBLISH_FOLDER"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest # WORKER LABEL
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+          
+      - name: Restore
+        run: dotnet restore SOLUTION_FILE.sln
+        
+      - name: Build
+        run: dotnet build SOLUTION_FILE.sln --configuration Release --no-restore
+        
+      - name: Publish
+        run: dotnet publish SOLUTION_FILE.sln --configuration Release --no-build --output '${{ env.PUBLISH_LOCATION }}'
+      
+      - name: Nexus Repo Publish
+        uses: sonatype-nexus-community/nexus-repo-github-action@master
+        with:
+          serverUrl: https://nexus_server_url.com
+          username: admin
+          password: ${{ secrets.password }}
+          format: nupkg
+          repository: your_nexus_repository
+          coordinates: groupId=com.example artifactId=app version=${{ env.VERSION }}
+          assets: extension=jar
+          filename: ./target/app-1.0.0.jar
